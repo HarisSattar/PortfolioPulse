@@ -1,4 +1,4 @@
-name: PortfolioPulse CI
+name: PortfolioPulse CI/CD
 
 on:
   push:
@@ -7,30 +7,43 @@ on:
     branches: [ main ]
 
 jobs:
-  check-code:
+  build-and-deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
     steps:
-      - uses: actions/checkout@v4
-      - name: Setup Node
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: 'npm'
 
-      # NEXT.JS APP CHECK
-      - name: Install App Deps
+      # 1. Build the Next.js App
+      - name: Install App Dependencies
         run: npm install
-      
-      # We run 'next build' instead of 'npx tsc' 
-      # Next.js will automatically run a strict type-check during the build
-      - name: Build and Typecheck App
-        run: npm run build
 
-      # AWS INFRA CHECK
-      - name: Install Infra Deps
+      - name: Build Next.js Static Export
+        run: npm run build
+        # This creates the /out folder required by the CDK deployment step
+
+      # 2. Deploy via AWS CDK
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Install Infra Dependencies
         run: |
           cd infra
           npm install
-      - name: Typecheck Infra
+
+      - name: CDK Deploy
         run: |
           cd infra
-          npx tsc
+          npx cdk deploy --require-approval never
