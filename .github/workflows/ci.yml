@@ -16,13 +16,16 @@ jobs:
         with:
           node-version: 20
 
-      # Install and check Next.js app
+      # NEXT.JS APP CHECK
       - name: Install App Deps
         run: npm install
-      - name: Typecheck App
-        run: npx tsc
+      
+      # We run 'next build' instead of 'npx tsc' 
+      # Next.js will automatically run a strict type-check during the build
+      - name: Build and Typecheck App
+        run: npm run build
 
-      # Install and check AWS Infra
+      # AWS INFRA CHECK
       - name: Install Infra Deps
         run: |
           cd infra
